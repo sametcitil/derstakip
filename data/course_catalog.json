@@ -1,0 +1,46 @@
+[
+  {
+    "code": "CS101",
+    "title": "Introduction to Computer Science",
+    "credit": 3,
+    "prereq": []
+  },
+  {
+    "code": "CS102",
+    "title": "Data Structures",
+    "credit": 4,
+    "prereq": [
+      "CS101"
+    ]
+  },
+  {
+    "code": "CS201",
+    "title": "Algorithms",
+    "credit": 4,
+    "prereq": [
+      "CS102"
+    ]
+  },
+  {
+    "code": "CS301",
+    "title": "Database Systems",
+    "credit": 3,
+    "prereq": [
+      "CS201"
+    ]
+  },
+  {
+    "code": "MATH101",
+    "title": "Calculus I",
+    "credit": 4,
+    "prereq": []
+  },
+  {
+    "code": "MATH102",
+    "title": "Calculus II",
+    "credit": 4,
+    "prereq": [
+      "MATH101"
+    ]
+  }
+]

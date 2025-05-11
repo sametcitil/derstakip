@@ -1,0 +1,40 @@
+RISK FORMULA EXPLANATION
+======================
+
+The risk score is calculated as a weighted sum of four components:
+
+1. Absence Risk (30% of total risk)
+   - Count the number of absences (bits set in absence_bits)
+   - Divide by maximum allowed absences (14)
+   - Apply non-linear scaling for absences > 70% of maximum:
+     - If ratio > 0.7, then risk = 0.7 + (ratio - 0.7) * 1.5
+   - Risk ranges from 0.0 (no absences) to 1.0 (max absences)
+
+2. Assignment Risk (30% of total risk)
+   - 50% from missed assignments: (missed / total)
+   - 50% from upcoming deadlines:
+     - Due in 1 day or less: +1.0 risk
+     - Due in 2-3 days: +0.7 risk
+     - Due in 4-5 days: +0.4 risk
+     - Due in 6-7 days: +0.2 risk
+     - Normalize by number of upcoming assignments
+
+3. Prerequisite Risk (25% of total risk)
+   - Count missing prerequisites for current courses
+   - Divide by total prerequisites required
+   - Risk ranges from 0.0 (all prereqs met) to 1.0 (no prereqs met)
+
+4. GPA Risk (15% of total risk)
+   - GPA >= 3.5: 0.0 risk
+   - GPA >= 3.0: 0.2 risk
+   - GPA >= 2.5: 0.4 risk
+   - GPA >= 2.0: 0.6 risk
+   - GPA >= 1.5: 0.8 risk
+   - GPA < 1.5: 1.0 risk
+
+Final risk score = 0.30 * absence_risk + 0.30 * assignment_risk + 0.25 * prereq_risk + 0.15 * gpa_risk
+
+Risk Level Classification:
+- Low Risk: score < 0.5
+- Medium Risk: 0.5 <= score <= 0.75
+- High Risk: score > 0.75 

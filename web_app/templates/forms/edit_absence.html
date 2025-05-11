@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}Devamsızlık Düzenle{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6 max-w-lg mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold">Devamsızlık Düzenle</h1>
+    <p class="text-gray-600">Öğrenci: {{ student.name }}</p>
+  </div>
+
+  <form method="POST" action="{{ url_for('students.edit_absence', sid=student.id) }}">
+    {{ form.csrf_token }}
+    
+    <div class="mb-4">
+      <label for="{{ form.absence_bits.id }}" class="block text-sm font-medium text-gray-700 mb-1">
+        {{ form.absence_bits.label.text }}
+      </label>
+      {{ form.absence_bits(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+      {% if form.absence_bits.errors %}
+        <div class="text-red-500 text-sm mt-1">
+          {% for error in form.absence_bits.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
+      <p class="text-gray-500 text-sm mt-1">
+        Her bir bit bir devamsızlığı temsil eder. Örneğin:
+        <br>3 (ikili: 11) = 2 devamsızlık
+        <br>7 (ikili: 111) = 3 devamsızlık
+        <br>15 (ikili: 1111) = 4 devamsızlık
+      </p>
+    </div>
+    
+    <div class="flex items-center justify-between mt-6">
+      <a href="{{ url_for('students.detail', sid=student.id) }}" class="text-blue-600 hover:underline">
+        Geri Dön
+      </a>
+      {{ form.submit(class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded") }}
+    </div>
+  </form>
+</div>
+{% endblock %} 

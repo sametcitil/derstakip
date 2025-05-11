@@ -1,0 +1,147 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ student.name }} - Detay{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">{{ student.name }}</h1>
+    <div>
+      <a href="{{ url_for('students.list_students') }}" class="text-blue-600 hover:underline mr-4">
+        Geri Dön
+      </a>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <h2 class="text-lg font-semibold mb-2">Risk Durumu</h2>
+    <div class="flex items-center">
+      <div class="w-full h-4 bg-gray-200 rounded mr-4">
+        <div class="h-4 rounded {% if risk_level == 'HIGH' %}bg-red-500{% elif risk_level == 'MEDIUM' %}bg-yellow-500{% else %}bg-green-500{% endif %}" 
+             style="width: {{ risk * 100 }}%;"></div>
+      </div>
+      <span class="font-bold {% if risk_level == 'HIGH' %}text-red-500{% elif risk_level == 'MEDIUM' %}text-yellow-500{% else %}text-green-500{% endif %}">
+        {{ "%.2f"|format(risk) }} ({{ risk_level }})
+      </span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Sol Kolon: Öğrenci Bilgileri -->
+    <div>
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-2">Öğrenci Bilgileri</h2>
+        <div class="bg-gray-50 p-4 rounded">
+          <div class="mb-2">
+            <span class="font-semibold">ID:</span> {{ student.id }}
+          </div>
+          <div class="mb-2">
+            <span class="font-semibold">İsim:</span> {{ student.name }}
+          </div>
+          <div class="mb-2">
+            <span class="font-semibold">GPA:</span> {{ student.gpa }}
+          </div>
+          <div class="mb-2">
+            <span class="font-semibold">Devamsızlık:</span> {{ student.absence_bits }}
+            <a href="{{ url_for('students.edit_absence', sid=student.id) }}" class="text-blue-600 hover:underline ml-2 text-sm">
+              Düzenle
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-2">Ödevler</h2>
+        {% if student.assignments %}
+          <div class="bg-gray-50 p-4 rounded">
+            <ul class="divide-y divide-gray-200">
+              {% for assignment in student.assignments %}
+                <li class="py-2">
+                  <div class="flex items-center">
+                    <div class="mr-2">
+                      {% if assignment.done %}
+                        <span class="inline-block w-4 h-4 bg-green-500 rounded-full"></span>
+                      {% else %}
+                        <span class="inline-block w-4 h-4 bg-red-500 rounded-full"></span>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <div>Son Tarih: {{ assignment.deadline }}</div>
+                      <div class="text-sm text-gray-500">
+                        {% if assignment.done %}
+                          Tamamlandı
+                        {% else %}
+                          Tamamlanmadı
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% else %}
+          <div class="bg-gray-50 p-4 rounded text-center">
+            <p>Henüz ödev bulunmuyor.</p>
+          </div>
+        {% endif %}
+        <div class="mt-2">
+          <a href="{{ url_for('students.add_assignment', sid=student.id) }}" class="text-blue-600 hover:underline">
+            Ödev Ekle
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ Kolon: Dersler -->
+    <div>
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-2">Dersler</h2>
+        {% if student.terms %}
+          <div class="bg-gray-50 p-4 rounded">
+            {% for term in student.terms %}
+              <div class="mb-4">
+                <h3 class="font-semibold">{{ term.year }}/{{ term.semester }}</h3>
+                {% if term.courses %}
+                  <ul class="list-disc ml-6">
+                    {% for course in term.courses %}
+                      <li class="flex justify-between items-center">
+                        <span>{{ course }}</span>
+                        <a href="{{ url_for('students.remove_course', sid=student.id, code=course) }}" 
+                           class="text-red-600 hover:text-red-900 text-sm"
+                           onclick="return confirm('Bu dersi silmek istediğinize emin misiniz?')">
+                          Sil
+                        </a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p class="text-gray-500">Bu dönemde ders bulunmuyor.</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-gray-50 p-4 rounded text-center">
+            <p>Henüz ders bulunmuyor.</p>
+          </div>
+        {% endif %}
+        <div class="mt-2">
+          <a href="{{ url_for('students.add_course', sid=student.id) }}" class="text-blue-600 hover:underline">
+            Ders Ekle
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Risk göstergesini animasyonlu hale getirmek için JS kodu eklenebilir
+  document.addEventListener('DOMContentLoaded', function() {
+    // Risk göstergesi animasyonu
+  });
+</script>
+{% endblock %} 
