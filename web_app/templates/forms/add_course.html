@@ -16,7 +16,7 @@
       <label for="{{ form.code.id }}" class="block text-sm font-medium text-gray-700 mb-1">
         {{ form.code.label.text }}
       </label>
-      {{ form.code(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500", placeholder="Örn: CS101") }}
+      {{ form.code(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500", id="course-select") }}
       {% if form.code.errors %}
         <div class="text-red-500 text-sm mt-1">
           {% for error in form.code.errors %}
@@ -24,7 +24,36 @@
           {% endfor %}
         </div>
       {% endif %}
-      <p class="text-gray-500 text-sm mt-1">Geçerli bir ders kodu girin</p>
+      <p class="text-gray-500 text-sm mt-1">Eklemek istediğiniz dersi seçin</p>
+      <div id="prereq-info" class="hidden mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+        <p class="text-sm font-medium text-blue-700">Bu dersin ön koşulları:</p>
+        <ul id="prereq-list" class="ml-5 text-sm list-disc text-blue-700"></ul>
+      </div>
+    </div>
+    
+    <div class="mb-4">
+      <div class="flex items-center">
+        {{ form.completed(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2", id="completed-checkbox") }}
+        <label for="{{ form.completed.id }}" class="block text-sm font-medium text-gray-700">
+          {{ form.completed.label.text }}
+        </label>
+      </div>
+      <p class="text-gray-500 text-sm mt-1">Ders tamamlandıysa işaretleyin</p>
+    </div>
+    
+    <div class="mb-4" id="grade-container" style="display: none;">
+      <label for="{{ form.grade.id }}" class="block text-sm font-medium text-gray-700 mb-1">
+        {{ form.grade.label.text }}
+      </label>
+      {{ form.grade(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+      {% if form.grade.errors %}
+        <div class="text-red-500 text-sm mt-1">
+          {% for error in form.grade.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
+      <p class="text-gray-500 text-sm mt-1">Ders tamamlandıysa not bilgisini seçin</p>
     </div>
     
     <div class="flex items-center justify-between mt-6">
@@ -35,4 +64,112 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const completedCheckbox = document.getElementById('completed-checkbox');
+    const gradeContainer = document.getElementById('grade-container');
+    const courseSelect = document.getElementById('course-select');
+    const prereqInfo = document.getElementById('prereq-info');
+    const prereqList = document.getElementById('prereq-list');
+    
+    // Ön koşul hatası varsa, sayfayı yukarı kaydır
+    const flashMessages = document.querySelectorAll('.bg-red-200');
+    if (flashMessages.length > 0) {
+      // Sayfanın en üstüne scroll yap
+      window.scrollTo(0, 0);
+      
+      // Hata mesajını vurgula
+      flashMessages.forEach(message => {
+        if (message.textContent.includes('Ön koşul sorunu')) {
+          message.classList.add('border-l-4', 'border-red-500', 'pl-4');
+          message.style.animation = 'flash 1s ease-in-out';
+        }
+      });
+    }
+    
+    // Kurs bilgilerini tutan bir nesne oluşturalım
+    const courseData = {
+      'YMH101': { code: 'YMH101', title: 'Yazılım Mühendisliği Temelleri I', prereq: [] },
+      'YMH102': { code: 'YMH102', title: 'Programlama I', prereq: [] },
+      'YMH103': { code: 'YMH103', title: 'Veri Yapıları I', prereq: [] },
+      'YMH201': { code: 'YMH201', title: 'Yazılım Mühendisliği Temelleri II', prereq: ['YMH101'] },
+      'YMH202': { code: 'YMH202', title: 'Programlama II', prereq: ['YMH102'] },
+      'YMH203': { code: 'YMH203', title: 'Veri Yapıları II', prereq: ['YMH103'] },
+      'YMH301': { code: 'YMH301', title: 'Yazılım Projesi I', prereq: ['YMH201'] },
+      'YMH302': { code: 'YMH302', title: 'İleri Programlama', prereq: ['YMH202'] },
+      'YMH303': { code: 'YMH303', title: 'Algoritma Analizi', prereq: ['YMH203'] }
+    };
+    
+    // API'den ders bilgilerini almayı dene, alamazsa sabit verileri kullan
+    fetch('/api/courses/autocomplete?query=Y')
+      .then(response => response.json())
+      .then(data => {
+        // Kurs verilerini sakla
+        data.forEach(course => {
+          courseData[course.code] = course;
+        });
+      })
+      .catch(error => console.error('Kurs bilgileri API\'den alınamadı, varsayılan bilgiler kullanılıyor:', error))
+      .finally(() => {
+        // Kurs seçim değişikliğini dinle
+        courseSelect.addEventListener('change', updatePrereqInfo);
+        
+        // İlk yükleme için ön koşul bilgilerini güncelle
+        updatePrereqInfo();
+      });
+      
+    // Ön koşul bilgilerini güncelle
+    function updatePrereqInfo() {
+      const selectedCode = courseSelect.value;
+      
+      if (selectedCode && courseData[selectedCode] && courseData[selectedCode].prereq && courseData[selectedCode].prereq.length > 0) {
+        // Ön koşul listesini temizle
+        prereqList.innerHTML = '';
+        
+        // Ön koşulları ekle
+        courseData[selectedCode].prereq.forEach(prereq => {
+          const li = document.createElement('li');
+          const prereqTitle = courseData[prereq] ? courseData[prereq].title : '';
+          li.textContent = `${prereq} ${prereqTitle ? '- ' + prereqTitle : ''}`;
+          prereqList.appendChild(li);
+        });
+        
+        // Ön koşul bilgilerini göster
+        prereqInfo.classList.remove('hidden');
+      } else {
+        // Ön koşul yoksa bilgi kutusunu gizle
+        prereqInfo.classList.add('hidden');
+      }
+    }
+    
+    // Sayfa yüklendiğinde tamamlanma durumunu kontrol et
+    if (completedCheckbox.checked) {
+      gradeContainer.style.display = 'block';
+    } else {
+      gradeContainer.style.display = 'none';
+    }
+    
+    // Checkbox değiştiğinde durumu güncelle
+    completedCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        gradeContainer.style.display = 'block';
+      } else {
+        gradeContainer.style.display = 'none';
+        // Checkbox işareti kaldırıldığında grade seçimini sıfırla
+        document.getElementById('{{ form.grade.id }}').value = '';
+      }
+    });
+  });
+</script>
+
+<style>
+  @keyframes flash {
+    0% { background-color: #FED7D7; }
+    50% { background-color: #FC8181; }
+    100% { background-color: #FED7D7; }
+  }
+</style>
 {% endblock %} 

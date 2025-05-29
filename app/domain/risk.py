@@ -8,22 +8,22 @@ from app.domain.ds.prereq_graph import PrereqGraph
 
 class RiskEngine:
     """
-    Engine for calculating student risk based on various factors.
+    Çeşitli faktörlere dayalı öğrenci risk puanı hesaplama motoru.
     """
     
     def __init__(self, storage):
         """
-        Initialize the risk engine with storage dependency.
+        Risk motorunu depolama bağımlılığı ile başlat.
         
         Args:
-            storage: The storage module for accessing student and course data.
+            storage: Öğrenci ve ders verilerine erişmek için depolama modülü.
         """
         self.storage = storage
         self._prereq_graph = None
         self._init_prereq_graph()
     
     def _init_prereq_graph(self) -> None:
-        """Initialize the prerequisite graph from course catalog."""
+        """Ders kataloğundan ön koşul grafiğini başlat."""
         courses = self.storage.load_course_catalog()
         self._prereq_graph = PrereqGraph()
         
@@ -32,83 +32,86 @@ class RiskEngine:
     
     def calculate(self, student: Student) -> float:
         """
-        Calculate the overall risk score for a student.
+        Bir öğrenci için genel risk puanını hesapla.
         
-        The risk score is a weighted sum of various risk factors:
-        - Absence risk (30%)
-        - Assignment risk (30%)
-        - Prerequisite risk (25%)
-        - GPA risk (15%)
+        Risk puanı, çeşitli risk faktörlerinin ağırlıklı toplamıdır:
+        - Devamsızlık riski (%25)
+        - Ödev riski (%25)
+        - Ön koşul riski (%20)
+        - GPA riski (%15)
+        - Harf notu riski (%15)
         
         Returns:
-            A risk score between 0.0 (no risk) and 1.0 (highest risk).
+            0.0 (risk yok) ile 1.0 (en yüksek risk) arasında bir risk puanı.
         """
-        # Calculate individual risk components
+        # Bireysel risk bileşenlerini hesapla
         absence_risk = self._calculate_absence_risk(student)
         assignment_risk = self._calculate_assignment_risk(student)
         prereq_risk = self._calculate_prereq_risk(student)
         gpa_risk = self._calculate_gpa_risk(student)
+        grade_risk = self._calculate_grade_risk(student)
         
-        # Apply weights to each component
+        # Her bileşene ağırlık uygula
         weighted_risk = (
-            0.30 * absence_risk +
-            0.30 * assignment_risk +
-            0.25 * prereq_risk +
-            0.15 * gpa_risk
+            0.25 * absence_risk +
+            0.25 * assignment_risk +
+            0.20 * prereq_risk +
+            0.15 * gpa_risk +
+            0.15 * grade_risk
         )
         
         return min(1.0, max(0.0, weighted_risk))
     
     def _calculate_absence_risk(self, student: Student) -> float:
         """
-        Calculate risk based on student absences.
+        Öğrenci devamsızlıklarına dayalı riski hesapla.
         
-        Uses the absence_bits field, where each bit represents an absence.
-        The risk increases as the number of absences approaches the maximum allowed.
+        Her bit bir devamsızlığı temsil eden absence_bits alanını kullanır.
+        Risk, devamsızlık sayısı izin verilen maksimuma yaklaştıkça artar.
         """
-        # Count the number of 1 bits in absence_bits
+        # absence_bits içindeki 1 bitlerin sayısını say
         absence_count = bin(student.absence_bits).count('1')
         
-        # Maximum allowed absences (typically 14 in a semester)
+        # İzin verilen maksimum devamsızlık (genellikle bir dönemde 14)
         max_absences = 14
         
-        # Calculate risk as a ratio of absences to maximum allowed
+        # Riski, devamsızlıkların izin verilen maksimuma oranı olarak hesapla
         if max_absences == 0:
             return 0.0
             
         risk = absence_count / max_absences
         
-        # Apply a non-linear scaling to emphasize risk as absences approach the limit
+        # Devamsızlıklar limite yaklaştıkça riski vurgulamak için doğrusal olmayan bir ölçeklendirme uygula
         if risk > 0.7:
-            # Increase risk more rapidly as it approaches the limit
+            # Limit yaklaştıkça riski daha hızlı artır
             risk = 0.7 + (risk - 0.7) * 1.5
             
         return min(1.0, max(0.0, risk))
     
     def _calculate_assignment_risk(self, student: Student) -> float:
         """
-        Calculate risk based on missed or upcoming assignments.
+        Kaçırılan veya yaklaşan ödevlere dayalı riski hesapla.
         
-        Considers:
-        - Proportion of missed assignments
-        - Proximity of upcoming deadlines
+        Şunları dikkate alır:
+        - Kaçırılan ödevlerin oranı
+        - Yaklaşan son teslim tarihlerinin yakınlığı
         """
         if not student.assignments:
             return 0.0
             
-        # Count missed assignments
+        # Kaçırılan ödevleri say
         total_assignments = len(student.assignments)
         missed_assignments = sum(1 for a in student.assignments 
                                if not a.done and a.deadline < date.today())
         
-        # Calculate risk from missed assignments (50% of assignment risk)
+        # Kaçırılan ödevlerden riski hesapla (ödev riskinin %50'si)
         missed_risk = missed_assignments / total_assignments if total_assignments > 0 else 0.0
         
-        # Calculate risk from upcoming deadlines (50% of assignment risk)
+        # Yaklaşan son teslim tarihlerinden riski hesapla (ödev riskinin %50'si)
         heap = AssignmentMinHeap.from_assignments(student.assignments)
         upcoming = heap.get_due_soon(days=7)
         
-        # Calculate deadline risk based on how soon assignments are due
+        # Son teslim tarihi riskini, ödevlerin ne kadar yakın olduğuna göre hesapla
         today = date.today()
         deadline_risk = 0.0
         
@@ -117,7 +120,7 @@ class RiskEngine:
                 continue
                 
             days_left = (assignment.deadline - today).days
-            # Higher risk for closer deadlines
+            # Daha yakın son teslim tarihleri için daha yüksek risk
             if days_left <= 1:
                 deadline_risk += 1.0
             elif days_left <= 3:
@@ -127,64 +130,97 @@ class RiskEngine:
             else:
                 deadline_risk += 0.2
         
-        # Normalize deadline risk
+        # Son teslim tarihi riskini normalize et
         max_deadline_risk = len(upcoming)
         if max_deadline_risk > 0:
             deadline_risk = deadline_risk / max_deadline_risk
         
-        # Combine missed and deadline risks
+        # Kaçırılan ve son teslim tarihi risklerini birleştir
         return 0.5 * missed_risk + 0.5 * deadline_risk
     
     def _calculate_prereq_risk(self, student: Student) -> float:
         """
-        Calculate risk based on prerequisite issues.
+        Ön koşul sorunlarına dayalı riski hesapla.
         
-        Checks if the student is taking courses without completing prerequisites.
+        Öğrencinin ön koşulları tamamlamadan dersler alıp almadığını kontrol eder.
         """
         if not self._prereq_graph:
             return 0.0
             
-        # Get all courses the student has completed
+        # Öğrencinin tamamladığı tüm dersleri al
         completed_courses = set()
         current_courses = set()
         
         for term in student.terms:
-            # Assume courses in past terms are completed
-            if term.year < date.today().year or (
-                term.year == date.today().year and 
-                ((term.semester == 1 and date.today().month > 6) or  # Spring term is over after June
-                 (term.semester == 2 and date.today().month > 12) or  # Fall term is over after December
-                 (term.semester == 3 and date.today().month > 8))     # Summer term is over after August
-            ):
-                completed_courses.update(term.courses)
-            else:
-                # Current term courses
-                current_courses.update(term.courses)
+            # Her dönem için tamamlanmış dersleri kontrol et
+            for course_enrollment in term.courses:
+                if course_enrollment.completed:
+                    # Sadece başarıyla tamamlanmış dersleri (FF hariç) listeye ekle
+                    if not course_enrollment.grade or course_enrollment.grade.upper() != "FF":
+                        completed_courses.add(course_enrollment.code)
+                else:
+                    # Mevcut (tamamlanmamış) dersleri listeye ekle
+                    current_courses.add(course_enrollment.code)
         
-        # Check prerequisites for current courses
+        # Mevcut dersler için ön koşulları kontrol et
         missing_prereqs = 0
         total_prereqs = 0
         
-        for course in current_courses:
-            prereqs = self._prereq_graph.get_prerequisites(course)
+        for course_code in current_courses:
+            prereqs = self._prereq_graph.get_prerequisites(course_code)
             total_prereqs += len(prereqs)
-            missing = self._prereq_graph.find_missing_prerequisites(course, completed_courses)
+            missing = self._prereq_graph.find_missing_prerequisites(course_code, completed_courses)
             missing_prereqs += len(missing)
         
-        # Calculate risk based on missing prerequisites
+        # Eksik ön koşullara dayalı riski hesapla
         if total_prereqs == 0:
             return 0.0
             
         return min(1.0, missing_prereqs / total_prereqs)
     
+    def _calculate_grade_risk(self, student: Student) -> float:
+        """
+        Harf notlarına dayalı riski hesapla.
+        
+        Şunları dikkate alır:
+        - FF ile tamamlanan dersler (başarısız)
+        - Düşük notlu dersler
+        """
+        # Notlandırma sistemi: AA=4.0, BA=3.5, BB=3.0, CB=2.5, CC=2.0, DC=1.5, DD=1.0, FF=0.0
+        grade_points = {
+            "AA": 0.0,  # Risk yok
+            "BA": 0.1,
+            "BB": 0.2,
+            "CB": 0.3,
+            "CC": 0.4,
+            "DC": 0.6,
+            "DD": 0.8,
+            "FF": 1.0   # Tam risk
+        }
+        
+        total_completed = 0
+        total_risk = 0.0
+        
+        for term in student.terms:
+            for course in term.courses:
+                if course.completed and course.grade:
+                    total_completed += 1
+                    grade = course.grade.upper()
+                    total_risk += grade_points.get(grade, 0.5)  # Bilinmeyen notlar için orta risk
+        
+        if total_completed == 0:
+            return 0.0
+        
+        return total_risk / total_completed
+    
     def _calculate_gpa_risk(self, student: Student) -> float:
         """
-        Calculate risk based on GPA.
+        GPA'ya dayalı riski hesapla.
         
-        Lower GPA indicates higher risk.
+        Düşük GPA daha yüksek risk gösterir.
         """
-        # Assume GPA is on a 4.0 scale
-        # Risk increases as GPA decreases
+        # GPA'nın 4.0 ölçeğinde olduğunu varsay
+        # GPA düştükçe risk artar
         if student.gpa >= 3.5:
             return 0.0
         elif student.gpa >= 3.0:

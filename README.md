@@ -32,3 +32,26 @@ poetry run uvicorn app.main:app --reload
 - `POST /students/{id}/courses`: Öğrenciye kurs ekle
 - `DELETE /students/{id}/courses/{code}`: Öğrenciden kurs sil
 - `GET /courses/autocomplete`: Kurs adı otomatik tamamlama 
+- `GET /students/{id}/assignments`: Öğrencinin tüm ödevlerini listele
+- `POST /students/{id}/assignments`: Öğrenciye yeni ödev ekle
+- `DELETE /students/{id}/assignments/{index}`: Öğrencinin belirli bir ödevini sil
+- `PATCH /students/{id}/assignments/{index}`: Öğrencinin belirli bir ödevini güncelle (tamamlandı/tamamlanmadı)
+
+## Risk Hesaplama
+
+Risk puanı beş ana bileşenden oluşur:
+
+1. **Devamsızlık Riski (25%)**: Öğrencinin kaç derse gelmediğinin bir ölçüsü
+2. **Ödev Riski (25%)**: Kaçırılan ödevler ve yaklaşan teslim tarihleri
+3. **Ön Koşul Riski (20%)**: Öğrencinin, ön koşulları tamamlamadan almaya çalıştığı dersler
+4. **GPA Riski (15%)**: Öğrencinin genel not ortalamasına dayalı risk
+5. **Harf Notu Riski (15%)**: Öğrencinin aldığı derslerin harf notlarına (AA-FF) dayalı risk
+
+Detaylı formül için bkz. [Risk Formülü](docs/risk_formula.txt)
+
+## Çalıştırma
+
+```bash
+python -m uvicorn app.main:app --reload
+# veya
+python run.py

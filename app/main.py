@@ -9,39 +9,39 @@ from app.api.routes import router as api_router
 from app.services.scheduler import start_scheduler
 from app.infrastructure import storage
 
-# Load environment variables from .env file
+# .env dosyasından çevre değişkenlerini yükle
 load_dotenv()
 
-# Configure logging
+# Loglama yapılandırması
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-# Create FastAPI application
+# FastAPI uygulamasını oluştur
 app = FastAPI(
     title="Course Risk API",
     description="API for tracking student course risks",
     version="0.1.0",
 )
 
-# Add CORS middleware
+# CORS middleware ekle - farklı kaynaklardan gelen isteklere izin ver
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development; restrict in production
+    allow_origins=["*"],  # Geliştirme için; üretimde kısıtlanmalıdır
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routes
+# API rotalarını dahil et
 app.include_router(api_router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """Root endpoint with welcome page."""
+    """Ana sayfa karşılama sayfası."""
     return """
     <!DOCTYPE html>
     <html>
@@ -99,17 +99,17 @@ async def root():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize application on startup."""
+    """Uygulama başlangıcında çalışan fonksiyon."""
     logger.info("Starting up Course Risk API")
     
-    # Ensure data directory exists
+    # Veri dizininin varlığını kontrol et, yoksa oluştur
     data_dir = os.getenv("DATA_DIR", "./data")
     os.makedirs(data_dir, exist_ok=True)
     
-    # Start scheduler
+    # Zamanlayıcıyı başlat (gece risk hesaplamaları için)
     start_scheduler(app)
     
-    # Create sample course catalog if it doesn't exist
+    # Örnek ders kataloğunu oluştur (eğer yoksa)
     if not os.path.exists(os.path.join(data_dir, "course_catalog.json")):
         _create_sample_course_catalog()
     
@@ -118,53 +118,71 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Clean up resources on shutdown."""
+    """Uygulama kapatılırken kaynakları temizle."""
     logger.info("Shutting down Course Risk API")
     
-    # Shutdown scheduler if it exists
+    # Zamanlayıcıyı kapat (eğer varsa)
     if hasattr(app.state, "scheduler"):
         app.state.scheduler.shutdown()
         logger.info("Scheduler shut down")
 
 
 def _create_sample_course_catalog():
-    """Create a sample course catalog for testing."""
+    """Test için örnek ders kataloğu oluştur."""
     sample_courses = [
         {
-            "code": "CS101",
-            "title": "Introduction to Computer Science",
+            "code": "YMH101",
+            "title": "Yazılım Mühendisliği Temelleri I",
             "credit": 3,
             "prereq": []
         },
         {
-            "code": "CS102",
-            "title": "Data Structures",
-            "credit": 4,
-            "prereq": ["CS101"]
-        },
-        {
-            "code": "CS201",
-            "title": "Algorithms",
-            "credit": 4,
-            "prereq": ["CS102"]
-        },
-        {
-            "code": "CS301",
-            "title": "Database Systems",
-            "credit": 3,
-            "prereq": ["CS201"]
-        },
-        {
-            "code": "MATH101",
-            "title": "Calculus I",
+            "code": "YMH102",
+            "title": "Programlama I",
             "credit": 4,
             "prereq": []
         },
         {
-            "code": "MATH102",
-            "title": "Calculus II",
+            "code": "YMH103",
+            "title": "Veri Yapıları I",
+            "credit": 3,
+            "prereq": []
+        },
+        {
+            "code": "YMH201",
+            "title": "Yazılım Mühendisliği Temelleri II",
+            "credit": 3,
+            "prereq": ["YMH101"]
+        },
+        {
+            "code": "YMH202",
+            "title": "Programlama II",
             "credit": 4,
-            "prereq": ["MATH101"]
+            "prereq": ["YMH102"]
+        },
+        {
+            "code": "YMH203",
+            "title": "Veri Yapıları II",
+            "credit": 3,
+            "prereq": ["YMH103"]
+        },
+        {
+            "code": "YMH301",
+            "title": "Yazılım Projesi I",
+            "credit": 4,
+            "prereq": ["YMH201"]
+        },
+        {
+            "code": "YMH302",
+            "title": "İleri Programlama",
+            "credit": 4,
+            "prereq": ["YMH202"]
+        },
+        {
+            "code": "YMH303",
+            "title": "Algoritma Analizi",
+            "credit": 3,
+            "prereq": ["YMH203"]
         }
     ]
     

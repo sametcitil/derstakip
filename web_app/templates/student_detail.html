@@ -105,9 +105,32 @@
                 {% if term.courses %}
                   <ul class="list-disc ml-6">
                     {% for course in term.courses %}
-                      <li class="flex justify-between items-center">
-                        <span>{{ course }}</span>
-                        <a href="{{ url_for('students.remove_course', sid=student.id, code=course) }}" 
+                      <li class="flex justify-between items-center py-1">
+                        <div>
+                          <span>{{ course.code }}</span>
+                          {% if course.completed %}
+                            {% if course.grade %}
+                              {% if course.grade.upper() == "FF" %}
+                                <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">FF (Başarısız)</span>
+                              {% elif course.grade.upper() in ["AA", "BA"] %}
+                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">{{ course.grade }}</span>
+                              {% elif course.grade.upper() in ["BB", "CB"] %}
+                                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">{{ course.grade }}</span>
+                              {% elif course.grade.upper() in ["CC", "DC"] %}
+                                <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">{{ course.grade }}</span>
+                              {% elif course.grade.upper() == "DD" %}
+                                <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">{{ course.grade }}</span>
+                              {% else %}
+                                <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">{{ course.grade }}</span>
+                              {% endif %}
+                            {% else %}
+                              <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">Tamamlandı</span>
+                            {% endif %}
+                          {% else %}
+                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">Devam Ediyor</span>
+                          {% endif %}
+                        </div>
+                        <a href="{{ url_for('students.remove_course', sid=student.id, code=course.code) }}" 
                            class="text-red-600 hover:text-red-900 text-sm"
                            onclick="return confirm('Bu dersi silmek istediğinize emin misiniz?')">
                           Sil

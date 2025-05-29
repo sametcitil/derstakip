@@ -63,16 +63,75 @@ def add_course(sid):
     """Öğrenciye ders ekle."""
     form = AddCourseForm()
     
+    # Mevcut kurs listesini almak için API'yi çağır
+    try:
+        # Kurs kataloğunu al
+        available_courses = []
+        # Boş query parametresi hata verebilir, dolayısıyla düzeltelim
+        course_catalog = api_get("/courses/autocomplete?query=Y")
+        
+        # Form için kurs seçimlerini hazırla
+        for course in course_catalog:
+            available_courses.append((course["code"], f"{course['code']} - {course.get('title', '')}"))
+        
+        # Kurslara göre form alanını güncelle
+        if available_courses:
+            form.code.choices = available_courses
+        else:
+            # Eğer API'den kurs listesi alınamazsa, sabit bir liste kullan
+            form.code.choices = [
+                ('YMH101', 'YMH101 - Yazılım Mühendisliği Temelleri I'),
+                ('YMH102', 'YMH102 - Programlama I'),
+                ('YMH103', 'YMH103 - Veri Yapıları I'),
+                ('YMH201', 'YMH201 - Yazılım Mühendisliği Temelleri II'),
+                ('YMH202', 'YMH202 - Programlama II'),
+                ('YMH203', 'YMH203 - Veri Yapıları II'),
+                ('YMH301', 'YMH301 - Yazılım Projesi I'),
+                ('YMH302', 'YMH302 - İleri Programlama'),
+                ('YMH303', 'YMH303 - Algoritma Analizi')
+            ]
+    except Exception as e:
+        # Kurs listesi alınamazsa varsayılan listeyi kullan
+        form.code.choices = [
+            ('YMH101', 'YMH101 - Yazılım Mühendisliği Temelleri I'),
+            ('YMH102', 'YMH102 - Programlama I'),
+            ('YMH103', 'YMH103 - Veri Yapıları I'),
+            ('YMH201', 'YMH201 - Yazılım Mühendisliği Temelleri II'),
+            ('YMH202', 'YMH202 - Programlama II'),
+            ('YMH203', 'YMH203 - Veri Yapıları II'),
+            ('YMH301', 'YMH301 - Yazılım Projesi I'),
+            ('YMH302', 'YMH302 - İleri Programlama'),
+            ('YMH303', 'YMH303 - Algoritma Analizi')
+        ]
+        print(f"Ders listesi alınamadı: {e}")
+    
     if form.validate_on_submit():
         try:
             # FastAPI'ye ders ekleme isteği gönder
             api_post(f"/students/{sid}/courses", json={
-                "code": form.code.data
+                "code": form.code.data,
+                "completed": form.completed.data,
+                "grade": form.grade.data if form.grade.data else None
             })
             flash(f"Ders eklendi: {form.code.data}", "success")
             return redirect(url_for(".detail", sid=sid))
         except Exception as e:
-            flash(f"Ders eklenemedi: {str(e)}", "error")
+            error_msg = str(e)
+            # API'den gelen hata mesajlarını daha kullanıcı dostu hale getir
+            if "detail" in error_msg:
+                try:
+                    import json
+                    error_data = json.loads(error_msg)
+                    if "detail" in error_data:
+                        error_msg = error_data["detail"]
+                except:
+                    pass
+            
+            # Ön koşul hatalarını kontrol et
+            if "Missing prerequisites" in error_msg or "Failed prerequisites" in error_msg:
+                flash(f"Ön koşul sorunu: {error_msg}", "error")
+            else:
+                flash(f"Ders eklenemedi: {error_msg}", "error")
     
     return render_template("forms/add_course.html", form=form, student_id=sid)
 

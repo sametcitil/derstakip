@@ -1,0 +1,38 @@
+{
+  "id": 9,
+  "name": "yigit sakca",
+  "gpa": 3.25,
+  "absence_bits": 20,
+  "terms": [
+    {
+      "year": 2025,
+      "semester": 1,
+      "courses": [
+        {
+          "code": "YMH101",
+          "completed": true,
+          "grade": "BA"
+        },
+        {
+          "code": "YMH103",
+          "completed": true,
+          "grade": "FF"
+        }
+      ]
+    }
+  ],
+  "assignments": [
+    {
+      "deadline": "2025-05-30",
+      "done": false
+    },
+    {
+      "deadline": "2025-06-20",
+      "done": false
+    },
+    {
+      "deadline": "2025-06-15",
+      "done": true
+    }
+  ]
+}

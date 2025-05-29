@@ -4,7 +4,7 @@ T = TypeVar('T')
 
 
 class Node(Generic[T]):
-    """A node in a singly linked list."""
+    """Tek yönlü bağlı listede bir düğüm."""
     
     def __init__(self, value: T):
         self.value = value
@@ -13,16 +13,16 @@ class Node(Generic[T]):
 
 class LinkedList(Generic[T]):
     """
-    A simple singly linked list implementation.
+    Basit bir tek yönlü bağlı liste uygulaması.
     """
     
     def __init__(self):
-        self.head: Optional[Node[T]] = None
-        self.tail: Optional[Node[T]] = None
-        self._size = 0
+        self.head: Optional[Node[T]] = None  # Listenin başındaki düğüm
+        self.tail: Optional[Node[T]] = None  # Listenin sonundaki düğüm
+        self._size = 0  # Liste eleman sayısı
     
     def append(self, value: T) -> None:
-        """Add a value to the end of the list."""
+        """Listenin sonuna bir değer ekler."""
         new_node = Node(value)
         
         if self.head is None:
@@ -36,7 +36,7 @@ class LinkedList(Generic[T]):
         self._size += 1
     
     def prepend(self, value: T) -> None:
-        """Add a value to the beginning of the list."""
+        """Listenin başına bir değer ekler."""
         new_node = Node(value)
         
         if self.head is None:
@@ -49,30 +49,30 @@ class LinkedList(Generic[T]):
         self._size += 1
     
     def remove(self, value: T) -> bool:
-        """Remove the first occurrence of a value from the list."""
+        """Listeden belirtilen değerin ilk örneğini kaldırır. Başarılıysa True, değilse False döner."""
         if self.head is None:
             return False
             
-        # Special case: removing the head
+        # Özel durum: Baş düğümü kaldırma
         if self.head.value == value:
             self.head = self.head.next
             self._size -= 1
             
-            # If the list is now empty, update the tail
+            # Eğer liste artık boşsa, kuyruğu güncelle
             if self.head is None:
                 self.tail = None
                 
             return True
         
-        # Search for the value in the rest of the list
+        # Değeri listenin geri kalanında ara
         current = self.head
         while current.next is not None:
             if current.next.value == value:
-                # Remove the node
+                # Düğümü kaldır
                 current.next = current.next.next
                 self._size -= 1
                 
-                # If we removed the tail, update it
+                # Eğer kuyruk düğümünü kaldırdıysak, kuyruğu güncelle
                 if current.next is None:
                     self.tail = current
                     
@@ -82,7 +82,7 @@ class LinkedList(Generic[T]):
         return False
     
     def find(self, value: T) -> Optional[Node[T]]:
-        """Find the first node containing the given value."""
+        """Verilen değeri içeren ilk düğümü bulur. Bulunamazsa None döner."""
         current = self.head
         while current is not None:
             if current.value == value:
@@ -91,22 +91,22 @@ class LinkedList(Generic[T]):
         return None
     
     def __iter__(self) -> Iterator[T]:
-        """Iterate through the values in the list."""
+        """Listedeki değerler üzerinde iterasyon yapar."""
         current = self.head
         while current is not None:
             yield current.value
             current = current.next
     
     def __len__(self) -> int:
-        """Get the number of elements in the list."""
+        """Listedeki eleman sayısını döndürür."""
         return self._size
     
     def is_empty(self) -> bool:
-        """Check if the list is empty."""
+        """Listenin boş olup olmadığını kontrol eder."""
         return self.head is None
     
     def to_list(self) -> List[T]:
-        """Convert the linked list to a Python list."""
+        """Bağlı listeyi Python listesine dönüştürür."""
         result = []
         current = self.head
         while current is not None:
